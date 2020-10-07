@@ -1,0 +1,59 @@
+{% extends "base.html"%}
+
+{% block titulo%}
+ Login
+{% endblock%}
+
+{% block conteudo%}
+
+<!--VERIFICA SE O USUÁRIO JÁ ESTÁ CONECTADO, E CASO JÁ ESTEJA REDIRECIONA PARA A TELA PRINCIAL -->
+
+{% if current_user.is_authenticated %}
+
+<meta http-equiv="Refresh" content="0; url={{ url_for('bot_iq')}}" />
+  
+{% endif%}
+
+
+<form action="{{ url_for('login')}}" method="POST">
+   
+     <div class="container">
+        <div class="card" id="tela-login">
+            <!-- <img src="..." class="card-img-top" alt="..."> -->
+            <div class="card-body">
+                <form>
+                    <div class="form-group">
+                      <label for="exampleInputEmail1">Login na IQ Option </label>
+
+                      
+<!-- USANDO ATRIBUTOS DE FORMA DINÂMICA PARA MOSTRAR O EMAIL E DESABILITAR O INPUT CORRESPONDENTE -->
+                   
+
+                      <input type="email " name="email" {% if  user %} readonly {% endif%}  class="form-control"   value="{{ user.email if  user}}" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Informe seu email" required>
+                              
+                    </div>
+               
+                    <div class="form-group">
+                      <label for="senha">Senha</label>
+                      <input type="password"  name="senha" class="form-control" id="senha" placeholder="Informe a Senha" required>
+                      
+                     
+                      
+
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success  btn-block">
+                      
+                      ENTRAR
+                    </button>
+                    
+                     <!-- ADICIONANDO O COMPONENTE DE NOTIFICAÇÕES -->
+                    {% include 'componentes/notificacao.html'%}
+                  </form>
+              
+            </div>
+          </div>
+  </form>
+
+          {% endblock%}
+

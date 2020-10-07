@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block titulo%}
+  Bot IQ Option
+{% endblock%}
+
+{% block conteudo%}
+
+    
+   
+    <div class="container-fluid">
+
+     
+
+       <nav class="navbar navbar-expand-lg  navbar-light  bg-light ">
+            <div class="navbar-text">
+              <div class="navbar-text">
+                <a class="nav-link">Status IQ: 
+                  {% if conectado%}
+                  <span class="badge badge-pill badge-success">CONECTADO</span></a>
+                  {% else%}
+                  <span class="badge badge-pill badge-danger">DESCONECTADO</span></a>
+                  {%endif%}
+              </div>
+              <div class="navbar-text">
+                <a class="navbar-text">Conta Usada: <span class="badge badge-pill badge-info">{{ger.tipo_conta}}</span> </a>
+              </div>
+            </div>    
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Alterna navegação">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+          
+            <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+              
+              <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                <li class="nav-item">
+                  <div class="navbar-item">
+                    <a class="nav-link">Banca Atual: <span class="badge badge-pill badge-info">{{balanco}}</span></a>
+                  </div>
+                  <div class="navbar-item">
+                    <a class="nav-link">Saldo do Dia: <span class="badge badge-pill badge-info">{{saldo_dia}}</span> </a>
+                  </div>
+                </li>
+                <li class="nav-item">
+                  <div class="navbar-item">
+                    <a class="nav-link">Stop Gain: <span class="badge badge-pill badge-info">{{ger.stop_gain}}</span></a>
+                  </div>
+                  <div class="navbar-item">
+                    <a class="nav-link">Saldo Loss: <span class="badge badge-pill badge-info">{{ger.stop_loss}}</span> </a>
+                  </div>
+                </li>
+                <li class="nav-item">
+                  <div class="navbar-item">
+                    <a class="nav-link">Payout Min: <span class="badge badge-pill badge-info">{{ger.pay_out_min}}</span></a>
+                  </div>
+                  <div class="navbar-item">
+                    <a class="nav-link">Delay(Seg): <span class="badge badge-pill badge-info">{{ger.delay}}</span> </a>
+                  </div>
+                </li>
+                <li class="nav-item">
+                  <div class="navbar-item">
+                    <a class="nav-link">Lote Padrão: <span class="badge badge-pill badge-info">{{ger.lote}}</span></a>
+                  </div>
+                  
+                </li>
+
+
+              </ul>
+              <form class="form-inline ">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-success dropdown-toggle mr-5" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <img src="{{ url_for('static', filename='img/icones/configura-branco.svg') }}" alt="" width="20" height="20">
+      
+                    Configurações
+
+                  </button>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item btn"  data-toggle="modal" data-target="#modalGerenciamento">
+                      <img src="{{ url_for('static', filename='img/icones/gerencia.svg') }}" alt="" width="20" height="20">
+      
+                      Gerenciamento 
+                    </a>
+                    <a class="dropdown-item btn" data-toggle="modal" data-target="#modalEntradas">
+                      <img src="{{ url_for('static', filename='img/icones/entradas-manuais.svg') }}" alt="" width="20" height="20">
+      
+                      Entradas Manuais
+                    </a>
+                    <a class="dropdown-item btn" data-toggle="modal" data-target="#modalImportArquivo">
+                      <img src="{{ url_for('static', filename='img/icones/pasta.svg') }}" alt="" width="20" height="20">
+      
+                      Importar Arquivo
+                    </a>
+                    
+                  </div>
+                
+              </form>
+            </div>
+          </nav>     
+                
+        
+    </div> 
+    
+
+    <!-- ADICIONANDO O COMPONENTE DE NOTIFICAÇÕES -->
+    <div class=" container-fluid text-center">    
+       <strong>  {% include 'componentes/notificacao.html'%} </strong>
+    </div>
+
+    <!-- MODAL DE GERENCIAMENTO DE BANCA -->
+      <form action="{{ url_for('editar_gerencia')}}" method="POST">
+        <div class="modal fade" id="modalGerenciamento" tabindex="-1" role="dialog" aria-labelledby="TituloModalCentralizado" aria-hidden="true">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="TituloModalCentralizado">Gerenciamento de Banca</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                    <form>
+                      <div class="form-row">
+                        <div class="form-group col-md-4">
+                          <label for="inputTipoConta">TIPO DE CONTA</label>
+                          <select id="inputTipoConta" name="inputTipoConta" class="form-control">
+                            <option {% if ger.tipo_conta=='DEMO'%} selected {%endif%} >DEMO</option>
+                            <option {% if ger.tipo_conta=='REAL'%} selected {%endif%} >REAL</option>
+                          </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                          <label for="payoutmin">PAYOUT MINIMO</label>
+                          <input type="number" class="form-control" name="payoutmin" id="payoutmin" value="{{ger.pay_out_min}}" required>
+                        </div>
+                        <div class="form-group col-md-4">
+                          <label for="delay">DELAY(Segundos)</label>
+                          <input type="number" class="form-control" name="delay" id="delay" value="{{ger.delay}}" required>
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group col-md-4">
+                          <label for="stoploss">STOP LOSS</label>
+                          <input type="text"  class="form-control money2" name="stoploss" id="stoploss" value="{{ger.stop_loss}}"  required>
+                        </div>
+                        
+                        <div class="form-group col-md-4">
+                          <label for="stopgain">STOP GAIN</label>
+                          <input type="text" class="form-control money2" name="stopgain" value="{{ger.stop_gain}}" id="stopgain"  required>
+                        </div>
+
+                        <div class="form-group col-md-4">
+                          <label for="lote">LOTE PADRÃO</label>
+                          <input type="text" class="form-control money2" name="lote" value="{{ger.lote}}" id="lote"  required>
+                        </div>
+                      </div>
+
+                      <h5>Filtros de Entradas</h5>
+
+                      <div class="form-row">
+                        
+                        <div class="form-group col-md-3">
+                          
+                          <div class="custom-control custom-checkbox">
+                            <input type="checkbox"  name="checkFiltroTend" class="custom-control-input" id="checkFiltroTend" {% if ger.fil_entrada_sma== True%} checked {% endif%}>
+                            <label class="custom-control-label" for="checkFiltroTend">Filtrar Entrada por Tendência SMA</label>
+                          </div>                          
+                            
+                            <select id="ativo" name="SMA" class="form-control" select>
+                              <option {% if ger.periodo_sma==5 %} selected {% endif%}>5</option>
+                              <option{% if ger.periodo_sma==10 %} selected {% endif%}>10</option>
+                              <option{% if ger.periodo_sma==20 %} selected {% endif%}>20</option>
+                              <option{% if ger.periodo_sma==30 %} selected {% endif%}>30</option>
+                              <option{% if ger.periodo_sma==50 %} selected {% endif%}>50</option>
+                              <option{% if ger.periodo_sma==100 %} selected {% endif%}>100</option>
+                              <option{% if ger.periodo_sma==200 %} selected {% endif%}>200</option>                               
+                            </select>                     
+                          
+                        </div>
+
+                        <div class="form-group col-md-3 ">
+                          
+                          <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" name="blocktodasordens" id="blocktodasordens" {% if ger.block_ord_todas == True %} checked {% endif%}>
+                            <label class="custom-control-label" for="blocktodasordens">Bloquar Ordens Juntas(Todas)</label>
+                          </div>                          
+                            
+                           
+                        </div>
+                        <div class="form-group col-md-3 ">
+                          
+                          <div class="custom-control custom-checkbox">
+                            <input type="checkbox" name="blockOdMesmoPar" class="custom-control-input" id="blockOdMesmoPar" {% if ger.block_ord_mesmo_par == True %} checked {% endif%}>
+                            <label class="custom-control-label" for="blockOdMesmoPar">Bloquar Ordens Juntas do Mesmo Par</label>
+                          </div>                          
+                            
+                           
+                        </div>
+
+                        <div class="form-group col-md-3 ">
+                          
+                          <div class="custom-control custom-checkbox">
+                            <input type="checkbox" name="VelaCorOposta" class="custom-control-input" id="VelaCorOposta" {% if ger.vela_cor_oposta == True %} checked {% endif%}>
+                            <label class="custom-control-label" for="VelaCorOposta">Vela Anterior Cor Oposta</label>
+                          </div>                          
+                            
+                           
+                        </div>
+                                               
+                      </div>
+                      <div class="form-row">
+                        <div class="form-group col-md-4">
+                          <label for="inputTipoMarting">TIPO DE CICLO DE RECUPERAÇÃO</label>
+                          <select id="inputTipoMarting" name="inputTipoMarting" class="form-control">
+                            <option {% if ger.martingale_tipo==1%} selected {%endif%} >PADRÃO</option>
+                            <option {% if ger.martingale_tipo==2%} selected {%endif%} >PERSONALIZADO</option>
+                          </select>
+                        </div>
+                        <div class="form-group col-md-8">
+                          <label for="inpMartingRetorno">LUCRO NO CICLO DE RECUPERAÇÃO(PERSONALISADO)</label>
+                          <input type="text" class="form-control money2" name="inpMartingRetorno" value="{{ger.martingale_retorno}}" id="inpMartingRetorno"  required>
+                        </div>
+                        
+
+                      </div>
+                      <div class="form-row">
+                        <label for="inputTipoMarting"><mark> Obs: se o tipo de CICLO de RECUPERAÇÃO 
+                          for 'PADRÃO', o sistema tentará recuperar apenas o valor do INVESTIMENTO.
+                           Se for 'PERSONALISADO', o sistema tentará recuperar o INVESTIMENTO + 'LUCRO NO CICLO DE RECUPERAÇÃO(PERSONALISADO). 
+                          </mark></label>
+
+                      </div>
+                         
+                    </form>
+              </div>
+              <div class="modal-footer">
+                <a type="button" href=" url_for('bot_iq')" class="btn btn-secondary" data-dismiss="modal">
+                  <img src="{{ url_for('static', filename='img/icones/sair-branco.svg') }}" alt="" width="20" height="20">
+                  Fechar
+                </a>
+                <button type="submit"  class="btn btn-primary">
+                  <img src="{{ url_for('static', filename='img/icones/salvar-branco.svg') }}" alt="" width="20" height="20">
+                  Salvar mudanças
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>   
+
+<!-- MODAL DE ENTRADAS -->
+      <form action="{{ url_for('add_entrada_manual')}}" method="POST">
+        <div class="modal fade" id="modalEntradas" tabindex="-1" role="dialog" aria-labelledby="TituloModalCentralizado" aria-hidden="true">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="TituloModalCentralizado">ENTRADAS MANUAIS</h5>
+
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+
+                    <form>
+                      
+                      <div class="form-row">
+                        <div class="form-group col-md-4">
+                          <label for="ativo">Ativo</label>
+                          <select id="ativo" name="ativo" class="form-control"  >
+                            <option selected>AUD/CAD</option>
+                            <option>AUD/CHF</option>
+                            <option>AUD/JPY</option>
+                            <option>AUD/USD</option>
+                            <option>AUD/NZD</option>
+                            <option >CAD/CHF</option>
+                            <option >CAD/JPY</option>
+                            <option >CHF/JPY</option>
+                            <option >EUR/USD</option>
+                            <option >EUR/GBP</option>
+                            <option >EUR/CHF</option>
+                            <option >EUR/CAD</option>
+                            <option >EUR/AUD</option>
+                            <option >EUR/NZD</option>
+                            <option >EUR/JPY</option>
+                            <option >GBP/JPY</option>
+                            <option >GBP/CHF</option>
+                            <option >GBP/AUD</option>
+                            <option >GBP/CAD</option>
+                            <option >GBP/USD</option>
+                            <option >GBP/NZD</option>
+                            <option >NZD/CHF</option>
+                            <option >NZD/USD</option>
+                            <option >NZD/JPY</option>
+                            <option >USD/JPY</option>
+                            <option >USD/CHF</option>
+                            <option >USD/CAD</option>
+                            
+                            
+                          </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                          <label for="hora">Horário:</label>
+                          <input type="text" data-mask="00:00" class="form-control" name="hora" id="hora" value="20:30" placeholder="coloque a hora" required>
+                        </div>
+                        
+                        <div class="form-group col-md-4">
+                          <label for="duracao">Duração</label>
+                          <select id="duracao" name="duracao" class="form-control"  >
+                            <option >M1</option>                            
+                            <option selected>M5</option>
+                            <option>M15</option>
+                            <option>M30</option>
+                            <option>H1</option>
+                            
+                            
+                          </select>
+                        </div>
+                        
+                      </div>
+                      <div class="form-row">
+                        <div class="form-group col-md-6">
+                          <label for="tipoentrada">Tipo de Entrada</label>
+                          <select id="tipoentrada" name="tipoentrada" class="form-control"  >
+                            <option selected >PUT</option>
+                            <option>CALL</option>
+                                                        
+                          </select>
+                        </div>
+
+                        <div class="form-group col-md-6">
+                          <label for="tipoativo">Tipo de Ativo</label>
+                          <select id="tipoativo" name="tipoativo" class="form-control"  >
+                            <option selected >NORMAL</option>
+                            <option>OTC</option>
+                                                        
+                          </select>
+                        </div>
+
+
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group col-md-12 justify-content-between">
+                          <label ><mark>Obs.: o fuso horário utilizado pelo Bot é o mesmo de Brasília-DF!</mark></label>
+              
+                        </div>
+                      </div>
+                      
+                     
+                      
+                    </form>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                  <img src="{{ url_for('static', filename='img/icones/sair-branco.svg') }}" alt="" width="20" height="20">
+                  Fechar
+                </button>
+                
+                <button type="submit" class="btn btn-primary">
+                  <img src="{{ url_for('static', filename='img/icones/adicionar-branco.svg') }}" alt="" width="20" height="20">
+                  Adicionar Entrada Manual
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+<!-- MODAL IMPORT ARQUIVOS -->
+<form action="{{url_for('upload')}}" enctype="multipart/form-data" method="POST">
+<div class="modal fade" id="modalImportArquivo" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">IMPORTAR ARQUIVO</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <div class="form-row">
+          <h5>Importar Uma Lista</h5>
+          <div class="form-group col-md-12">
+            <label for="exampleFormControlFile1">Selecione um Arquivo</label>
+            <input type="file" name="arquivo" class="form-control-file" id="exampleFormControlFile1" required >
+
+          </div>                        
+         
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-12">
+            <label for="usolista"><h6>A Lista Será Usada:</h6> </label>
+            <select id="usolista" name="usolista" class="form-control"  >
+              <option selected>NA DATA ATUAL</option>
+              <option >NO DIA SEGUINTE</option>
+
+          </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-12 justify-content-between">
+            <label ><mark>Obs.: o fuso horário utilizado pelo Bot é o mesmo de Brasília-DF!</mark></label>
+
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <img src="{{ url_for('static', filename='img/icones/sair-branco.svg') }}" alt="" width="20" height="20"> 
+          Fechar
+        </button>
+        <button type="submit" class="btn btn-primary">
+          <img src="{{ url_for('static', filename='img/icones/arquivar-branco.svg') }}" alt="" width="20" height="20">
+          Importar Lista
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</form>
+
+
+
+    <main id="tabela">
+    <div class="container-fluid table-responsive ">
+      <table class="table table-striped table-light">
+        <thead>
+          <tr>
+            <th scope="col" style="width: 10%">Data</th>
+            <th scope="col" style="width: 10%">Hora</th>
+            <th scope="col"style="width: 12%">Ativo</th>
+            <th scope="col"style="width: 10%">Tipo</th>
+            <th scope="col"style="width: 10%">Duração</th>
+            <th scope="col">Observações</th>
+            <th scope="col"style="width: 10%">Remover</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          {% for entrada in entradas|sort(attribute="data,hora")%}
+          
+          <tr>
+            
+            <td >{{entrada.data}}</td>
+            <td >{{entrada.hora}}</td>
+            <td>{{entrada.ativo}}</td>
+            <td>{{entrada.tipo_ordem}}</td>
+            <td>{{entrada.duracao}}</td>
+            <td>{{entrada.observacoes}}</td>
+            <td> 
+            
+              <a href="{{url_for('desativar_ordem', id=entrada.id)}}">
+                <img src="{{ url_for('static', filename='img/icones/lixeira.svg') }}" alt="" width="20" height="20">
+
+              </a>
+            
+            </td> 
+          </tr>
+          {% endfor%}
+          
+        </tbody>
+      </table>
+      
+      
+    </div>
+  </main>
+
+    <footer>
+      <div class="container">
+        
+        <nav id="rodape" class="navbar fixed-bottom navbar-expand-lg navbar-light bg-light">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Alterna navegação">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+        
+      <div class="collapse navbar-collapse" id="navbarTogglerDemo">
+        <div class="container">
+        
+          <ul class="navbar-nav mx-auto  mt-lg-0">
+            <li class="nav-item mt-2">
+              <div class="navbar-item">
+                <button type="button"   class="btn btn-success">
+                  <img src="{{ url_for('static', filename='img/icones/megafone-branco.svg') }}" alt="" width="20" height="20">
+                  Suporte
+                </button>
+            </div>
+            </li>
+            <li class="nav-item mt-2">
+              <div class="navbar-item">                       
+              <a type="button" href="{{url_for('termo_uso')}}" target="_blank" class="btn btn-success">
+                <img src="{{ url_for('static', filename='img/icones/termo-branco.svg') }}" alt="" width="20" height="20">
+                Termos de Uso
+              </a>
+              </div>
+            </li> 
+            <li class="nav-item mt-2">
+              <div class="navbar-item "> 
+              <a  class="btn btn-danger" href="" data-toggle="modal" data-target="#modalLogout">
+                <img src="{{ url_for('static', filename='img/icones/sair-branco.svg') }}" alt="" width="20" height="20">
+                Sair
+              </a>
+              </div>
+            </li>
+          </ul>
+        
+        
+        
+        </div>
+      </div>
+
+        </nav>
+
+      </div>
+      <!-- MODAL LOGOUT -->
+      
+        <div class="modal fade" id="modalLogout" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Logout!</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+               Se você fizer LOGOUT, as operações do robô serão suspensas 
+               , e só voltarão a funcionar quando
+               você fizer LOGIN novamente. Além disso todas as
+               ordens expiradas e as não executadas serão excluídas. Desejesa relamente fazer LOGOUT?
+              </div>
+              <div class="modal-footer">
+               
+     
+                <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Não</button> -->
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Não</button>
+                <a type="button" href="{{ url_for('logout')}}" class="btn btn-primary">
+                  Sim
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+
+   
+      
+    </footer>
+   
+    {% endblock%}
+
+    
+    {% block scripts %}
+    <script>
+    $(document).ready(function(){
+
+        $('.date').mask('00/00/0000');
+        $('.time').mask('00:00:00');
+        $('.date_time').mask('00/00/0000 00:00:00');
+        $('.cep').mask('00000-000');
+        $('.phone').mask('0000-0000');
+        $('.phone_with_ddd').mask('(00) 0000-0000');
+        $('.phone_us').mask('(000) 000-0000');
+        $('.mixed').mask('AAA 000-S0S');
+        $('.cpf').mask('000.000.000-00', {reverse: true});
+        $('.cnpj').mask('00.000.000/0000-00', {reverse: true});
+        $('.money').mask('000.000.000.000.000,00', {reverse: true});
+        $('.money2').mask("#.##0,00", {reverse: true});   
+            
+      
+        
+     
+      })
+    </script>
+
+    {% endblock%}

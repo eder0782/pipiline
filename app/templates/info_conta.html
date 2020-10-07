@@ -1,0 +1,49 @@
+<p>
+    <h5>Theads Ativas</h5>
+    <table>
+    <tbody>
+    {%for i in td%}
+    <p>{{i}}</p>
+    {%endfor%}
+</tbody>
+</table>
+    
+</p>
+
+<p>
+    <h5>Lista Digital</h5>
+<table>
+    <tbody>
+    {%for i in lbin%}
+    {%if i=='binary'%}
+    <p>{{i}}:{{lbin[i]}}</p>
+    {%endif%}
+    {%if i=='turbo'%}
+    <p>{{i}}:{{lbin[i]}}</p>
+    {%endif%}
+    {%endfor%}
+    </tbody>
+</table>
+</p>
+
+<p>
+    <h5>Lista Digital</h5>
+<table>
+    <tbody>
+    {%for i in ldig%}
+    <p>{{i}}:{{ldig[i]}}</p>
+    {%endfor%}
+    </tbody>
+</table>
+</p>
+
+<p>
+    <h5>HORA</h5>
+<table>
+    <tbody>
+    
+    <p>{{hora}}</p>
+   
+    </tbody>
+</table>
+</p>

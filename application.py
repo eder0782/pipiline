@@ -1,9 +1,11 @@
-from flask import Flask
-application = Flask(__name__)
+from app import application
+from app import db
+from app.controlers import funcoes_uteis as func
 
-@application.route("/")
-def hello():
-    return "Hello World! - Em portugês - olá mundo"
 
-if __name__ == '__main__':
-    application.run()
+if __name__ == "__main__":
+    db.create_all()
+    # func.conta_thread()
+    application.run(debug=True)
+    # func.conta_thread()
+    
