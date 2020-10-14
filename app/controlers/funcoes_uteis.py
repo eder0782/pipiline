@@ -48,7 +48,7 @@ def acesso(email,senha):
         gerencia.stop_loss = 10
         gerencia.stop_gain = 10
         gerencia.pay_out_min = 70
-        gerencia.delay = 3
+        gerencia.delay = 1
         gerencia.lote =1
         gerencia.fil_entrada_sma = False
         gerencia.periodo_sma = 100

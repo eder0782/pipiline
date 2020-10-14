@@ -763,6 +763,7 @@ class IQ_Option:
                     break
             except:
                 pass
+            time.sleep(1)
         x = self.api.socket_option_closed[id_number]
         return x['msg']['win'], (0 if x['msg']['win'] == 'equal' else float(x['msg']['sum']) * -1 if x['msg']['win'] == 'loose' else float(x['msg']['win_amount']) - float(x['msg']['sum']))
 

@@ -257,9 +257,11 @@ def compra_op_binaria(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativ
             #SE A ORDEM FOI ACEITA, INICIAO O ACOMPNHAMENTO DO RESULTADO
             td_resultado_ordem_binaria(id,id_tb_entrada,martingale_ativo, ciclo_marting)
 
-            # hora_expiracao = func.converte_data_timezone(datetime.now()) + timedelta(minutes=timeframe)
+            hora_expiracao = func.converte_data_timezone(datetime.now()) + timedelta(minutes=timeframe) + timedelta(seconds=10)
+            hora_expiracao = hora_expiracao.replace(second=0,microsecond=0)
+            print(hora_expiracao)
             #PEGA O HORÁRIO DE EXPIERAÇÃO DA ORDEM
-            ORDEM_BIN_ABERTA.append(calcula_horario_expiraca(timeframe))
+            ORDEM_BIN_ABERTA.append(hora_expiracao)
             # print(ORDEM_BIN_ABERTA)
         else:
             entrada = tabelas.Entrada.query.get(id_tb_entrada)
@@ -360,8 +362,8 @@ def resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada, martingale_ati
                         #REMOVENDO O HORÁRIO DA LISTA DE ORDENS PENDENTES
                         hora_expiracao = func.converte_data_timezone(datetime.now()) + timedelta(seconds=10)
                         hora_expiracao = hora_expiracao.replace(second=0,microsecond=0)
-
-                        ORDEM_DIG_ABERTA.remove(hora_expiracao)
+                        if hora_expiracao in ORDEM_DIG_ABERTA:
+                            ORDEM_DIG_ABERTA.remove(hora_expiracao)
                         
                         break
                     else:
@@ -373,8 +375,8 @@ def resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada, martingale_ati
                         #REMOVENDO O HORÁRIO DA LISTA DE ORDENS PENDENTES
                         hora_expiracao2 = func.converte_data_timezone(datetime.now()) + timedelta(seconds=10)
                         hora_expiracao2 = hora_expiracao2.replace(second=0,microsecond=0)
-
-                        ORDEM_DIG_ABERTA.remove(hora_expiracao2)
+                        if hora_expiracao2 in ORDEM_DIG_ABERTA:
+                            ORDEM_DIG_ABERTA.remove(hora_expiracao2)
 
                         entrada = tabelas.Entrada.query.get(id_tb_entrada)
                         entrada.observacoes='RESULTADO: LOSS | VALOR: '+str(float(round(valor_entrada*-1,2))) + mensagem_marting
@@ -398,8 +400,10 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
     '''
     try:
         global ORDEM_BIN_ABERTA
-        resultado,lucro = API.check_win_v3(id_ordem)
-        
+        resultado,lucro = API.check_win_v4(id_ordem)
+        print('Resultado: ' + str(resultado))
+        print('Lucro: ' + str(lucro))
+        print('id_ordem: ' + str(id_ordem))
         if resultado == 'loose' and ciclo_marting<2:
             entrada = tabelas.Entrada.query.get(id_tb_entrada)    
             entrada.ciclo = ciclo_marting +1
@@ -417,7 +421,8 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
         #REMOVENDO O HORÁRIO DA LISTA DE ORDENS PENDENTES
         hora_expira = func.converte_data_timezone(datetime.now()) + timedelta(seconds=10)
         hora_expira = hora_expira.replace(second=0,microsecond=0)
-        ORDEM_BIN_ABERTA.remove(hora_expira)
+        if hora_expira in ORDEM_BIN_ABERTA:
+            ORDEM_BIN_ABERTA.remove(hora_expira)
             
         mensagem_marting = (' |CICLO DE RECUPERAÇÃO N'+ str(ciclo_marting)) if martingale_ativo else ''
         # print('ciclo_marting: ' + str(ciclo_marting)) 
