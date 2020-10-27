@@ -136,7 +136,7 @@ def importar_lista(usar_lista_em):
                 entrada.lote = 0
                 entrada.id_user = 1
                 entrada.resultado_op = 0
-                entrada.tipo_conta = ger.tipo_conta
+                entrada.tipo_conta = ''
                 entrada.id_ini_martingale = 0
                 db.session.add(entrada)
                 

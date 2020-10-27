@@ -360,7 +360,7 @@ def add_entrada_manual():
         entrada.lote = 0
         entrada.id_user = 1
         entrada.resultado_op = 0
-        entrada.tipo_conta = ger.tipo_conta
+        entrada.tipo_conta = ''
         db.session.add(entrada)
         db.session.commit()
         chamar.desat_ordens_horario_expirado()  

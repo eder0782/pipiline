@@ -387,6 +387,11 @@ def resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada, martingale_ati
                         break
                 time.sleep(0.5)
     except Exception as e:
+        entrada = tabelas.Entrada.query.get(id_tb_entrada)
+        entrada.observacoes='Falha na conexão com a IQ Option!'
+        entrada.executar=False
+        entrada.enviada=True
+        db.session.commit()
         print(' Falha api.py resultado_ordem_digital: ' + str(e))
 
             
@@ -446,6 +451,11 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
         db.session.commit()
         
     except Exception as e:
+        entrada = tabelas.Entrada.query.get(id_tb_entrada)
+        entrada.observacoes='Falha na conexão com a IQ Option!'
+        entrada.executar=False
+        entrada.enviada=True
+        db.session.commit()
         print('Falha api.py resultado_ordem_binaria: ' + str(e))
 
 def payout_bin():
@@ -573,19 +583,19 @@ def get_tipo_conta():
 ########################################
 
 def td_compra_op_binaria(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativo, ciclo_marting,id_martin,id_ini_martingale):
-    t1 = threading.Thread(target= compra_op_binaria, args=(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativo, ciclo_marting,id_martin,id_ini_martingale))
+    t1 = threading.Thread(target= compra_op_binaria,name='td_compra_op_binaria', args=(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativo, ciclo_marting,id_martin,id_ini_martingale))
     t1.start()
 
 def td_compra_op_digital(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativo, ciclo_marting,id_martin,id_ini_martingale):
-    t1 = threading.Thread(target= compra_op_digital, args=(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativo, ciclo_marting,id_martin,id_ini_martingale))
+    t1 = threading.Thread(target= compra_op_digital,name='td_compra_op_digital',args=(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativo, ciclo_marting,id_martin,id_ini_martingale))
     t1.start()
 
 def td_resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada,martingale_ativo, ciclo_marting):
-    t1 = threading.Thread(target= resultado_ordem_digital, args=(id_ordem,valor_entrada,id_tb_entrada,martingale_ativo, ciclo_marting))
+    t1 = threading.Thread(target= resultado_ordem_digital,name='td_resultado_ordem_digital',args=(id_ordem,valor_entrada,id_tb_entrada,martingale_ativo, ciclo_marting))
     t1.start()
 
 def td_resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marting):
-    t1 = threading.Thread(target= resultado_ordem_binaria, args=(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marting))
+    t1 = threading.Thread(target= resultado_ordem_binaria,name='td_resultado_ordem_binaria', args=(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marting))
     t1.start()
 # def td_saldo_do_dia():
 #     t1 = threading.Thread(target=saldo_do_dia)

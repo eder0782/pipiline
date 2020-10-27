@@ -49,7 +49,9 @@ def inicia_bot():
                     id_tab_entrada,hora,ativo,duracao,tipo_ordem = li
                     #JÁ ALTERA O CAMPO ENVIADA PARA TRUE EVITANDO QUE SEJAM ENVIADAS ORDENS EM DUPLICIDADE
                     entrada = tabelas.Entrada.query.get(int(id_tab_entrada))
+                    ger = tabelas.Gerencia.query.get(1)
                     entrada.enviada = True
+                    entrada.tipo_conta = ger.tipo_conta
                     # entrada.executar = False
                     if stops()==1:
                         entrada.observacoes= 'Ignorado....Stop Gain Já Alcançado!'
@@ -68,9 +70,9 @@ def inicia_bot():
                     #SE A ORDEM FOI BLOQUEADA POR CONTA DE TER OUTRAS NO MESMO HORÁRIO       
                     retorno,mensagem =set_bloquear_ordens_juntas(id_tab_entrada,ativo,hora)
                     # print(retorno)
-                    if retorno :
+                    if retorno :                        
                         entrada2 = tabelas.Entrada.query.get(int(id_tab_entrada))
-                        entrada2.executar = False
+                        entrada2.executar = False                        
                         entrada2.observacoes= mensagem
                         db.session.commit()
                         continue
@@ -121,7 +123,7 @@ def inicia_bot():
                     martingale_ativo = False
                     id_martin, lote_martin,ciclo_martin ,id_ini_martingale = get_martingales_ativos()
                     entrada =tabelas.Entrada.query.get(int(id_tab_entrada))
-
+                    print('id_martin: ' + str(id_martin))
                     if id_martin !=0 and (melho_payout==1 or melho_payout==2):
                         id = id_martin if id_ini_martingale==0 else id_ini_martingale
                         lote_atual = get_lote_martingale(id,valor_payout)
@@ -144,7 +146,44 @@ def inicia_bot():
                     #MODIFICA O VALOR DO LOTE NO RESPECTIVO CAMPO DA OPERAÇÃO ATUAL
                     
                     entrada.lote = lote
-                    db.session.commit()                  
+                    db.session.commit()
+
+                    # VERIFICANDO SE O SALDO DA BANCA É SUFICIENTE PARA O LOTE ATUAL
+                    balanco_atual,status_balanc_at = get_balanco_atual()
+                    print('balanco_atual: ' + str(balanco_atual))
+                    print('lote:' + str(lote))
+
+                    if status_balanc_at ==True:
+                        if balanco_atual< lote:
+                            print('saldo atual insuficiente')
+                            entrada3 = tabelas.Entrada.query.get(int(id_tab_entrada))
+                            entrada3.executar = False
+                            entrada3.observacoes= 'Ignorado...Saldo Atual é Insuficiente!'
+                            db.session.commit()
+                        #SE TIVER MARTINGALE ATIVO VOLTA A SER TRUE
+                            if id_martin!=0:
+                                entrada4 = tabelas.Entrada.query.get(int(id_martin))
+                                entrada4.martingale_ativo = True                            
+                                db.session.commit()
+                        
+                            continue                    
+                    else:
+                        entrada3 = tabelas.Entrada.query.get(int(id_tab_entrada))
+                        entrada3.executar = False
+                        entrada3.observacoes= 'Falha na conxeção com a IQ Option!'
+                        db.session.commit()
+
+                        #SE TIVER MARTINGALE ATIVO VOLTA A SER TRUE
+                        if id_martin!=0:
+                            entrada4 = tabelas.Entrada.query.get(int(id_martin))
+                            entrada4.martingale_ativo = True                            
+                            db.session.commit()
+
+                        continue
+
+
+
+
                 
                     # print(melho_payout)
 
@@ -516,9 +555,10 @@ def get_martingales_ativos():
      
         con = sqlite3.connect('app/banco.db',timeout=10)
         cur = con.cursor()
+        ger = tabelas.Gerencia.query.get(1)
         data_atual = func.converte_data_timezone(datetime.now()) #datetime.fromtimestamp(api.API.get_server_timestamp())
         select = cur.execute('select id,lote, ciclo,id_ini_martingale  from entrada where martingale_ativo = 1'+
-                ' and data = ?',(data_atual.strftime('%Y-%m-%d'),))
+                ' and data = ? and tipo_conta = ? ',(data_atual.strftime('%Y-%m-%d'),ger.tipo_conta,))
         li = select.fetchall()
         if li:
             return li[0][0],li[0][1], li[0][2], li[0][3]   
@@ -570,10 +610,11 @@ def get_lote_martingale(id_martin,payout):
     '''
     try:
         con = sqlite3.connect('app/banco.db',timeout=10)
+        ger = tabelas.Gerencia.query.get(1)
         cur = con.cursor()
         data_atual = func.converte_data_timezone(datetime.now()) #datetime.fromtimestamp(api.API.get_server_timestamp())
         select = cur.execute('select sum(lote) from entrada where id = ? or id_ini_martingale = ?'+
-                ' and data = ?',(id_martin,id_martin,data_atual.strftime('%Y-%m-%d'),))
+                ' and data = ? and tipo_conta = ?',(id_martin,id_martin,data_atual.strftime('%Y-%m-%d'),ger.tipo_conta,))
         # print(select)
         perca_acumulada = select.fetchall()
         # print(perca_acumulada[0][0])
@@ -602,7 +643,17 @@ def get_lote_martingale(id_martin,payout):
     finally:
         con.close()
     
-
+def get_balanco_atual():
+    '''
+    FUNÇÃO USADA PARA RETORNAR O SALDO DA CONTA,
+    CASO OCORRA ERRO NA CONEXÃO, RETORNA ZERO E FALSO, CASO OCORRA NORMAL RETORNA O SALDO E TRUE. 
+    ESTA FUNÇÃO FOI CRIADA PARA EVITAR ERROS QUANDO O SALDO DA CONTA É MENOR QUE O 
+    VALOR DO LOTE.
+    '''
+    try:
+        return api.API.get_balance(),True
+    except :
+        return 0,False
             
 
 
