@@ -5,6 +5,7 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.api_iq import api_iq as api
 import sqlite3, threading, time, pytz
+import requests
 
 
 ativos_comandos= ['AUD/CAD','AUD/CHF','AUD/JPY','AUD/USD','AUD/NZD','CAD/CHF','CAD/JPY','CHF/JPY','EUR/USD',
@@ -172,6 +173,10 @@ def deletar_lista():
         print('Falha funcoes_uteis.py em deletar_lista: ' + str(e))
     finally:
         con.close()
+
+
+
+
 # def threaded(fn):
 #     def wrapper(*args, **kwargs):
 #         thread = threading.Thread(target=fn, args=args, kwargs=kwargs)

@@ -14,7 +14,7 @@ from app.controlers import funcoes_uteis as func
 
 #ESSES IMPORTES FORAM USADOS PARA IMPORTAR ARQUIVO
 from werkzeug.utils import secure_filename
-import os
+import os, requests
 
 login_manager= LoginManager(app)
 
@@ -39,6 +39,21 @@ def login():
     if request.method == 'POST':
         email=request.form['email']
         senha =request.form['senha']
+
+        #CONTROLE DE LINCEÇA
+        licenca = consultar_email_licenca(email)
+        # print('licenca:'+ str(licenca))
+        print('licenca: ' + str(licenca))
+        resultado,vencimento = licenca
+        if resultado == 0:
+            #SE O RESULTADO FOR ZERO SEGNIFICA QUE A LICENÇA ESTÁ VENCIDA
+            flash('A sua licença venceu, entre em contado com a nossa equipe para reativar sua licença!')
+            return redirect(url_for('login'))
+        
+        if resultado == -1:
+            #SE O EMAIL NÃO FOR CADASTRADO
+            flash('A licença do robô não está liberada para este email!')
+            return redirect(url_for('login'))
 
         conectado = api.get_status_conexao()
         LOGADO = False
@@ -128,6 +143,30 @@ def logout():
 def bot_iq():
     
     user = tabelas.Usuario.query.get(1)
+
+    #CONTROLE DE LINCEÇA
+    licenca = consultar_email_licenca(user.email)
+    
+    resultado,vencimento = licenca
+
+    if resultado == 0:
+        #SE O RESULTADO FOR ZERO SEGNIFICA QUE A LICENÇA ESTÁ VENCIDA
+        flash('A sua licença venceu, entre em contado com a nossa equipe para reativar sua licença!')
+        return redirect(url_for('logout'))
+
+    if resultado == -1:
+        #SE O EMAIL NÃO FOR CADASTRADO
+        flash('A licença do robô não está liberada para este email!')
+        return redirect(url_for('logout'))
+    if resultado == 1:        
+        #SE A LICENÇA FOR VÁLIDA
+        diferenca = (vencimento -datetime.now()).days
+        palavra_dias = ' dia!' if diferenca==1 else ' dias!'
+        
+        if diferenca>= 0 and diferenca<=5:
+            flash('Sua Licença Expira em : '+ str(diferenca) +palavra_dias)
+    
+
     if user:
         if user.conectado == False:
             return redirect(url_for('login'))
@@ -376,6 +415,27 @@ def lista_ativos_online():
     td_ativas = threading.enumerate()
     return render_template('info_conta.html',lbin = listabin,ldig = listadig, td = td_ativas, hora = hora)
 
+def consultar_email_licenca(email):
+    try:
+        # print('aqui')
+        resp = requests.get('http://appcontolelicenca-env.eba-mtpri2sp.us-east-2.elasticbeanstalk.com/consultar_email?email='+str(email).lower().strip(), timeout=3)
+        
+        # print('resp:' + str(resp))
+        resultado = resp.json()['resultado']
+        vencimento = resp.json()['vencto']
+        # print('resultado: ' + str(resultado))
+        
+        if vencimento!=0:
+            vencto_format = datetime.strptime(str(vencimento),'%Y-%m-%d %H:%M:%S')
+
+            return resultado,vencto_format
+        else:
+            return resultado, vencimento
+
+    except Exception as e:
+        print('Erro : '+ str(e))
+        return -2,0
+        
 
        
         
