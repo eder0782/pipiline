@@ -4,6 +4,7 @@ from datetime import datetime, date, timedelta
 from dateutil import tz
 import sys, json, os
 import threading
+from app.api_iq import chamar_api
 from app.models import tabelas 
 from app import db
 from app.controlers import funcoes_uteis as func
@@ -246,12 +247,13 @@ def compra_op_binaria(ativo,lote,timeframe,direcao,id_tb_entrada,martingale_ativ
             entrada.enviada=True
             db.session.commit()
 
-            #MODIFICA A LINHA DA TABELA QUE ESTA COM O MARTINGALE ATIVO
-            if id_martin !=0:
-                #ATRIBUINDO O ID DO MARTINGALE NO ID_INI_MARTINGALE DA ORDEM ATUAL
-                entrada_id_entrada = tabelas.Entrada.query.get(int(id_tb_entrada))
-                entrada_id_entrada.id_ini_martingale = id_martin if id_ini_martingale == 0 else id_ini_martingale
-                db.session.commit()             
+            #ESTA PARTE FOI REMOVIDA, POIS O MARTINGALE É EXECUTADO DE OUTRA FORMA AGORA
+            # #MODIFICA A LINHA DA TABELA QUE ESTA COM O MARTINGALE ATIVO
+            # if id_martin !=0:
+            #     #ATRIBUINDO O ID DO MARTINGALE NO ID_INI_MARTINGALE DA ORDEM ATUAL
+            #     entrada_id_entrada = tabelas.Entrada.query.get(int(id_tb_entrada))
+            #     entrada_id_entrada.id_ini_martingale = id_martin if id_ini_martingale == 0 else id_ini_martingale
+            #     db.session.commit()             
                 
 
             #SE A ORDEM FOI ACEITA, INICIAO O ACOMPNHAMENTO DO RESULTADO
@@ -366,12 +368,8 @@ def resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada, martingale_ati
                             ORDEM_DIG_ABERTA.remove(hora_expiracao)
                         
                         break
-                    else:
-                        if ciclo_marting<2:
-                            entrada = tabelas.Entrada.query.get(id_tb_entrada)
-                            entrada.ciclo = ciclo_marting +1
-                            entrada.martingale_ativo = True
-                            db.session.commit()
+                    else:                                                  
+                           
                         #REMOVENDO O HORÁRIO DA LISTA DE ORDENS PENDENTES
                         hora_expiracao2 = func.converte_data_timezone(datetime.now()) + timedelta(seconds=10)
                         hora_expiracao2 = hora_expiracao2.replace(second=0,microsecond=0)
@@ -383,7 +381,18 @@ def resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada, martingale_ati
                         #VERIFICA SE O CILO DE MARTINGALE É MENOR QUE FOI PARA PODER GERAR UM NOVO CICLO
                         entrada.resultado_op = float(round(valor_entrada*-1,2))                   
                         db.session.commit()
-                        
+                        if ciclo_marting<2:
+                            entrada = tabelas.Entrada.query.get(id_tb_entrada)
+                            ativo = entrada.ativo
+                            timeframe = entrada.duracao
+                            direcao = entrada.tipo_ordem
+                            hora_entrada = entrada.hora
+                            id_ini_martingale =entrada.id_ini_martingale
+                            
+                            if  entrada.id_ini_martingale ==0:
+                                id_ini_martingale= id_tb_entrada
+                            martingale(ativo,timeframe,direcao,id_tb_entrada,ciclo_marting,id_ini_martingale,hora_entrada)
+                    
                         break
                 time.sleep(0.5)
     except Exception as e:
@@ -411,16 +420,40 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
         print('id_ordem: ' + str(id_ordem))
         if resultado == 'loose' and ciclo_marting<2:
             entrada = tabelas.Entrada.query.get(id_tb_entrada)    
-            entrada.ciclo = ciclo_marting +1
+            # entrada.ciclo = ciclo_marting +1
+            entrada.resultado_op = float(round(lucro,2))
             entrada.martingale_ativo = True
-            db.session.commit()
+            db.session.commit()         
+            
+            ativo = entrada.ativo
+            timeframe = entrada.duracao
+            direcao = entrada.tipo_ordem
+            hora_entrada = entrada.hora
+            id_ini_martingale =entrada.id_ini_martingale
+            
+            if  entrada.id_ini_martingale ==0:
+                id_ini_martingale= id_tb_entrada
+            martingale(ativo,timeframe,direcao,id_tb_entrada,ciclo_marting,id_ini_martingale,hora_entrada)
+                    
 
         #SE O RESULTADO FOR ZERO, REPETE O CICLO DE MARTINGALE
-        if lucro == 0 and martingale_ativo and ciclo_marting<2:
+        if lucro == 0 and martingale_ativo and ciclo_marting<=2:
             entrada = tabelas.Entrada.query.get(id_tb_entrada)    
-            entrada.ciclo = ciclo_marting
-            entrada.martingale_ativo = True
+            entrada.resultado_op = float(round(lucro,2))   
+            # entrada.martingale_ativo = True
             db.session.commit()
+            ativo = entrada.ativo
+            timeframe = entrada.duracao
+            direcao = entrada.tipo_ordem
+            hora_entrada = entrada.hora
+            id_ini_martingale =entrada.id_ini_martingale
+            # DIMINUI U CICLO DE MARTINGALE EM 1, PARA PODER REFAZER O MESMO CICLO
+            cliclo_mart_lucro_zero = ciclo_marting-1          
+            
+            if  entrada.id_ini_martingale ==0:
+                id_ini_martingale= id_tb_entrada
+            martingale(ativo,timeframe,direcao,id_tb_entrada,cliclo_mart_lucro_zero,id_ini_martingale,hora_entrada)
+                    
 
 
         #REMOVENDO O HORÁRIO DA LISTA DE ORDENS PENDENTES
@@ -443,9 +476,10 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
         # resposta = resposta_loss 
         # print('resposta: ' + str(resposta))
         entrada = tabelas.Entrada.query.get(id_tb_entrada)
+        entrada.resultado_op = float(round(lucro,2))
         
         entrada.observacoes= resposta
-        entrada.resultado_op = float(round(lucro,2))        
+             
         #VERIFICA SE O RESULTADO FOI LOSS E SE O CILO DE MARTINGALE É MENOR QUE DOIS PARA PODER GERAR UM NOVO CICLO
     
         db.session.commit()
@@ -457,6 +491,91 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
         entrada.enviada=True
         db.session.commit()
         print('Falha api.py resultado_ordem_binaria: ' + str(e))
+
+
+def martingale(ativo,timeframe,direcao,id_tb_entrada, ciclo_marting,id_ini_martingale,hora_entrada):
+    try:
+        
+
+        entrada = tabelas.Entrada()
+               
+        entrada.ativo = ativo
+        entrada.duracao = timeframe
+        entrada.tipo_ordem = direcao
+        entrada.observacoes=''
+        entrada.executar = False
+        entrada.expirado = False
+        entrada.enviada = True
+        # entrada.block_todas = False
+        # entrada.block_mesmo_par = False
+        entrada.ciclo = ciclo_marting +1
+        entrada.martingale_ativo = True
+        
+        entrada.id_user = 1
+        entrada.resultado_op = 0
+        entrada.tipo_conta = ''
+        entrada.id_ini_martingale = id_ini_martingale
+
+        #REMOVEMENDO A / DO NOME DO ATIVO
+        ativo_entrada =str(ativo).replace('/','')
+         
+        duracao_entrada =str(timeframe).replace('M','')
+        #VERIFICA SE O TIMEFRAM É EM HORA
+        if 'H' in duracao_entrada:
+            duracao_entrada= duracao_entrada.replace('H','')
+            duracao_entrada= int(duracao_entrada)*60
+        
+        
+        #CALCULANDO A HORA DA ENTRADA
+        data_atual = func.converte_data_timezone(datetime.now()) 
+        
+        hora = hora_entrada[:2]        
+        minuto = hora_entrada[3:]
+        
+        data_atual = data_atual.replace(hour=int(hora),minute=int(minuto),second=0) + timedelta(minutes=int(duracao_entrada))
+        entrada.hora = data_atual.strftime('%H:%M')
+        entrada.data = data_atual.strftime('%Y-%m-%d')
+
+        
+
+        #CALCULANDO O LOTE DE MARTINGALE
+        melho_payout, valor_payout= get_melhor_payout(ativo_entrada.upper(),int(duracao_entrada))
+        lote_marging = chamar_api.get_lote_martingale(id_ini_martingale,valor_payout)
+        entrada.lote = lote_marging
+
+        db.session.add(entrada)
+        db.session.commit()
+
+        id_tb_entrada_atual = entrada.id
+        id_martin = 0
+
+        if melho_payout == 1:
+            td_compra_op_digital(ativo_entrada.upper(),float(lote_marging),int(duracao_entrada),str(direcao).lower(),int(id_tb_entrada_atual),True,ciclo_marting+1,id_martin,id_ini_martingale)
+        elif melho_payout ==2:
+            td_compra_op_binaria(ativo_entrada.upper(),float(lote_marging),int(duracao_entrada),str(direcao).lower(),int(id_tb_entrada_atual),True,ciclo_marting+1,id_martin,id_ini_martingale)
+        elif melho_payout == 0:
+            mensagem ='Ignorado...Payout Atual é menor que o mínimo permitido! -CR'
+            # entrada = tabelas.Entrada.query.get(int(id_tb_entrada_atual))
+            entrada.executar = False
+            entrada.observacoes = mensagem
+            db.session.commit()                        
+        elif melho_payout == -1:
+            mensagem ='Ignorado...Paridade/TimeFrame Inativo! - CR'
+            # entrada = tabelas.Entrada.query.get(int(id_tb_entrada_atual))
+            entrada.executar = False
+            entrada.observacoes = mensagem
+            db.session.commit()
+        else:
+            pass
+
+
+
+
+
+    
+    except Exception as e:
+        print('Falha api.py mantingale: '+ str(e))
+
 
 def payout_bin():
     try:
@@ -489,6 +608,71 @@ def calcula_horario_expiraca(timeFrame):
             hora_expira = hora_entrada + timedelta(minutes=timeFrame)
             return hora_expira
         
+def get_melhor_payout(ativo,timeframe):
+    '''
+    Se o melhor payoute for Digital, retorna 1 \n
+    Se for Binario retorna 2 \n
+    Se não estiver ativo, retorna -1 \n
+    Se o payout for menor que o mínimo retorna 0\n
+    Retorna também o valor o payout para usar no martingale
+    
+    '''
+    try:
+
+        chamar_api.PAYOUT_MIN
+
+        par_online_binary=LISTA_BINARIA
+        par_online_digital = LISTA_DIGITAL
+        payout_binary = LISTA_PAYOUT_BINARY
+
+        if par_online_binary['binary'][ativo.upper()]['open'] == True:
+            StatusB = int(payout_binary[ativo.upper()]['binary'] *100)
+        else:
+            StatusB = 0
+
+        if par_online_binary['turbo'][ativo.upper()]['open'] == True:
+            StatusT = int(payout_binary[ativo.upper()]['turbo'] *100)
+        else:
+            StatusT = 0
+
+        if ativo in par_online_digital:
+            StatusD = int(par_online_digital[ativo.upper()])
+        else:
+            StatusD = 0
+        #SE O PAR NÃO ESTIVER ATIVO
+        if StatusB==0 and StatusD ==0 and StatusT==0:
+            return -1,0
+
+        
+        # Status_retorno = 0
+
+        if StatusB > StatusD and timeframe > 5:
+            id_entrada = 2
+            payout_ = int(StatusB)
+        elif StatusD >= StatusB and timeframe > 5 and timeframe<=15:
+            id_entrada = 1
+            payout_ = int(StatusD)                        
+        elif StatusD >= StatusT and timeframe <=5:
+            id_entrada = 1
+            payout_ = int(StatusD)
+        elif StatusT > StatusD and timeframe <=5 :
+            id_entrada = 2
+            payout_ = int(StatusT)
+        elif  StatusB!=0 and timeframe>15:        
+            id_entrada = 2
+            payout_ = int(StatusB)
+        elif StatusB==0 and timeframe>15:
+            id_entrada = 0
+            payout_ = 0
+        
+        if payout_ >= chamar_api.PAYOUT_MIN:
+            return id_entrada, payout_
+        else:
+            return 0, payout_
+
+    except Exception as e:
+        print('Falha api_iq.py get_melhor_payout: '+ str(e))
+        return 0,0
 
 
         

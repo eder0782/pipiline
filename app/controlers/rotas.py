@@ -144,6 +144,17 @@ def bot_iq():
     
     user = tabelas.Usuario.query.get(1)
 
+    if user:
+        if user.conectado == False:
+            return redirect(url_for('login'))
+        else:
+            # if login_user()
+            login_user(user,remember=True, duration= timedelta(days=180))
+            # print(login_user(user))
+
+    else:
+        return redirect(url_for('login'))
+
     #CONTROLE DE LINCEÇA
     licenca = consultar_email_licenca(user.email)
     
@@ -167,16 +178,7 @@ def bot_iq():
             flash('Sua Licença Expira em : '+ str(diferenca) +palavra_dias)
     
 
-    if user:
-        if user.conectado == False:
-            return redirect(url_for('login'))
-        else:
-            # if login_user()
-            login_user(user,remember=True, duration= timedelta(days=180))
-            # print(login_user(user))
-
-    else:
-        return redirect(url_for('login'))
+    
     
     #FUNCAO QUE FORMATA OS VALORES FLOAT PARA EXIBIR NOS CAMPOS COM MASCARA
 

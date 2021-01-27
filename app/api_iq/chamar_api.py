@@ -17,6 +17,8 @@ STOPLOSS = None
 STOPGAIN = None
 SALDO_DIA =0
 
+VENCIMENTO_LICENCA = None
+
 #VARIÁVEL QUE VERIFICA SE A ROTINA QUE LISTA OS PARES ATIVOS ESTÁ EM USO
 LISTA_PARES_RODANDO = False
 
@@ -106,41 +108,52 @@ def inicia_bot():
                             entrada3.observacoes= 'Ignorado...Tendência Atual é diferente da ordem!'
                             db.session.commit()
                             continue
+
+                    #ESTA PARTE FOI REMOVIDA, POIS O MARTINGALE AGORA SERÁ FEITO DE MANEIRA DIFERENTE    
                     #VERIFICA SE TEM ORDENS EM ABERTO PARA O HORÁRIO ATUAL
                     #CASO TENHA, AGUARDA ATÉ QUE A ORDEM SEJA CONCLUÍDA
-                    hora_entrada = func.converte_data_timezone(datetime.now()) + timedelta(seconds=15)
-                    hora_entrada = hora_entrada.replace(second=0,microsecond=0)
-                    for i in range(15):
-                        if (hora_entrada not in api.ORDEM_BIN_ABERTA) and (hora_entrada  not in api.ORDEM_DIG_ABERTA):
-                            break
-                        print('tem ordem pendente')
-                        time.sleep(0.5)
+                    # hora_entrada = func.converte_data_timezone(datetime.now()) + timedelta(seconds=15)
+                    # hora_entrada = hora_entrada.replace(second=0,microsecond=0)
+                    # for i in range(15):
+                    #     if (hora_entrada not in api.ORDEM_BIN_ABERTA) and (hora_entrada  not in api.ORDEM_DIG_ABERTA):
+                    #         break
+                    #     print('tem ordem pendente')
+                    #     time.sleep(0.5)
 
 
                     melho_payout, valor_payout= get_melhor_payout(ativo.upper(),int(duracao))
                     #VARIÁVEL QUE AVISA SE O MARTINGALE ESTÁ ATIVO
                     #ESTA INFORMAÇÃO É SOMENTE PARA SER GRAVADA NO CAMPO DE OBSERVAÇÕES E SER MOSTRADA AO USUÁRIO
-                    martingale_ativo = False
-                    id_martin, lote_martin,ciclo_martin ,id_ini_martingale = get_martingales_ativos()
-                    entrada =tabelas.Entrada.query.get(int(id_tab_entrada))
-                    print('id_martin: ' + str(id_martin))
-                    if id_martin !=0 and (melho_payout==1 or melho_payout==2):
-                        id = id_martin if id_ini_martingale==0 else id_ini_martingale
-                        lote_atual = get_lote_martingale(id,valor_payout)
-                        martingale_ativo = True
-                        #ESSE IF É USADO, PARA CASO DÊ ALGUM ERRO NO CALCULO DO LOTE MARTING
-                        if lote_atual!=0:
-                            print(lote_atual)
-                            lote = lote_atual
-                            entrada4 = tabelas.Entrada.query.get(int(id_martin))
-                            entrada4.martingale_ativo = False                            
-                            db.session.commit()
-                        else:
-                            id_martin=0
-                            lote_martin=0
-                            ciclo_martin =0
-                            id_ini_martingale=0
+                    # martingale_ativo = False
+                    # id_martin, lote_martin,ciclo_martin ,id_ini_martingale = get_martingales_ativos()
+                    # entrada =tabelas.Entrada.query.get(int(id_tab_entrada))
+                    # print('id_martin: ' + str(id_martin))
+                    # if id_martin !=0 and (melho_payout==1 or melho_payout==2):
+                    #     id = id_martin if id_ini_martingale==0 else id_ini_martingale
+                    #     lote_atual = get_lote_martingale(id,valor_payout)
+                    #     martingale_ativo = True
+                    #     #ESSE IF É USADO, PARA CASO DÊ ALGUM ERRO NO CALCULO DO LOTE MARTING
+                    #     if lote_atual!=0:
+                    #         print(lote_atual)
+                    #         lote = lote_atual
+                    #         entrada4 = tabelas.Entrada.query.get(int(id_martin))
+                    #         entrada4.martingale_ativo = False                            
+                    #         db.session.commit()
+                    #     else:
+                    #         id_martin=0
+                    #         lote_martin=0
+                    #         ciclo_martin =0
+                    #         id_ini_martingale=0
 
+                    # O MARTINGALE SERÁ SETADO SEMPRE COMO FALSE
+                    #POIS AGORA ELE SERÁ REALIZADO DE POR OUTRA FUNÇÃO
+                    #NÃO MAIS POR AQUI
+                    #MODIFIQUEI APENAS AS VARIÁVEIS PARA EVITAR ERROS
+                    martingale_ativo = False
+                    id_martin=0
+                    lote_martin=0
+                    ciclo_martin =0
+                    id_ini_martingale=0
 
 
                     #MODIFICA O VALOR DO LOTE NO RESPECTIVO CAMPO DA OPERAÇÃO ATUAL
@@ -150,8 +163,8 @@ def inicia_bot():
 
                     # VERIFICANDO SE O SALDO DA BANCA É SUFICIENTE PARA O LOTE ATUAL
                     balanco_atual,status_balanc_at = get_balanco_atual()
-                    print('balanco_atual: ' + str(balanco_atual))
-                    print('lote:' + str(lote))
+                    # print('balanco_atual: ' + str(balanco_atual))
+                    # print('lote:' + str(lote))
 
                     if status_balanc_at ==True:
                         if balanco_atual< lote:
@@ -613,23 +626,26 @@ def get_lote_martingale(id_martin,payout):
         ger = tabelas.Gerencia.query.get(1)
         cur = con.cursor()
         data_atual = func.converte_data_timezone(datetime.now()) #datetime.fromtimestamp(api.API.get_server_timestamp())
-        select = cur.execute('select sum(lote) from entrada where id = ? or id_ini_martingale = ?'+
+        select = cur.execute('select sum(resultado_op) from entrada where id = ? or id_ini_martingale = ?'+
                 ' and data = ? and tipo_conta = ?',(id_martin,id_martin,data_atual.strftime('%Y-%m-%d'),ger.tipo_conta,))
         # print(select)
         perca_acumulada = select.fetchall()
+        
         # print(perca_acumulada[0][0])
         
-        if perca_acumulada:       
+        if perca_acumulada:
+            #O RESULTADO OBTIDO É NEGATIVO, POR ISSO MUTIPLICA POR -1
+                   
             ger = tabelas.Gerencia.query.get(1)
             valor= 0
             lucro_esperado = ger.martingale_retorno
                 
             #SE FOR O MARTINGALE DO TIPO PADRÃO
             if ger.martingale_tipo ==1: 
-                valor = perca_acumulada[0][0]/payout*100
+                valor = (perca_acumulada[0][0]*-1)/payout*100
 
             else:
-                valor = (perca_acumulada[0][0] + lucro_esperado)/payout*100
+                valor = (perca_acumulada[0][0]*-1 + lucro_esperado)/payout*100
             
             return round(valor,2)
         else:
@@ -655,6 +671,8 @@ def get_balanco_atual():
     except :
         return 0,False
             
+
+
 
 
 ########################
