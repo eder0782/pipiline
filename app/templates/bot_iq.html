@@ -46,7 +46,7 @@
                     <a class="nav-link">Stop Gain: <span class="badge badge-pill badge-info">{{ger.stop_gain}}</span></a>
                   </div>
                   <div class="navbar-item">
-                    <a class="nav-link">Saldo Loss: <span class="badge badge-pill badge-info">{{ger.stop_loss}}</span> </a>
+                    <a class="nav-link">Stop Loss: <span class="badge badge-pill badge-info">{{ger.stop_loss}}</span> </a>
                   </div>
                 </li>
                 <li class="nav-item">
@@ -209,23 +209,23 @@
                       </div>
                       <div class="form-row">
                         <div class="form-group col-md-4">
-                          <label for="inputTipoMarting">TIPO DE CICLO DE RECUPERAÇÃO</label>
+                          <label for="inputTipoMarting">TIPO DE CICLO DE MARGINGALE</label>
                           <select id="inputTipoMarting" name="inputTipoMarting" class="form-control">
                             <option {% if ger.martingale_tipo==1%} selected {%endif%} >PADRÃO</option>
                             <option {% if ger.martingale_tipo==2%} selected {%endif%} >PERSONALIZADO</option>
                           </select>
                         </div>
                         <div class="form-group col-md-8">
-                          <label for="inpMartingRetorno">LUCRO NO CICLO DE RECUPERAÇÃO(PERSONALISADO)</label>
+                          <label for="inpMartingRetorno">LUCRO NO CICLO DE MARTINGALE(PERSONALISADO)</label>
                           <input type="text" class="form-control money2" name="inpMartingRetorno" value="{{ger.martingale_retorno}}" id="inpMartingRetorno"  required>
                         </div>
                         
 
                       </div>
                       <div class="form-row">
-                        <label for="inputTipoMarting"><mark> Obs: se o tipo de CICLO de RECUPERAÇÃO 
+                        <label for="inputTipoMarting"><mark> Obs: se o tipo de CICLO de MARTINGALE 
                           for 'PADRÃO', o sistema tentará recuperar apenas o valor do INVESTIMENTO.
-                           Se for 'PERSONALISADO', o sistema tentará recuperar o INVESTIMENTO + 'LUCRO NO CICLO DE RECUPERAÇÃO(PERSONALISADO). 
+                           Se for 'PERSONALISADO', o sistema tentará recuperar o INVESTIMENTO + 'LUCRO NO CICLO DE MARTINGALE(PERSONALISADO). 
                           </mark></label>
 
                       </div>
@@ -565,11 +565,9 @@
               </button>
             </div>
             <div class="modal-body">
-             <p><strong>Versão do Bot:</strong> 3.3</p>
-             <p><strong>Data da Versão:</strong> 25/01/2021</p>
-             <p><strong>Desenvolvido Por:</strong> Eder Santo</p>
-             <p><strong>Contato(whatsapp):</strong> (92)98187-2438</p>
-             <p><strong>Email:</strong> goldenmachine1020@gmail.com</p>
+             <p><strong>Versão do Bot:</strong> 3.5</p>
+             <p><strong>Data da Versão:</strong> 28/01/2021</p>
+            
 
             </div>
             <div class="modal-footer">

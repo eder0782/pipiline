@@ -350,7 +350,7 @@ def resultado_ordem_digital(id_ordem,valor_entrada,id_tb_entrada, martingale_ati
     try:
         global ORDEM_DIG_ABERTA
         if isinstance(id_ordem, int):
-            mensagem_marting = (' | CICLO DE RECUPERAÇÃO N' + str(ciclo_marting)) if martingale_ativo else ''
+            mensagem_marting = (' | CICLO DE GALE N' + str(ciclo_marting)) if martingale_ativo else ''
             while True:
                 status,lucro = API.check_win_digital_v2(id_ordem)
                 
@@ -462,7 +462,7 @@ def resultado_ordem_binaria(id_ordem,id_tb_entrada,martingale_ativo, ciclo_marti
         if hora_expira in ORDEM_BIN_ABERTA:
             ORDEM_BIN_ABERTA.remove(hora_expira)
             
-        mensagem_marting = (' |CICLO DE RECUPERAÇÃO N'+ str(ciclo_marting)) if martingale_ativo else ''
+        mensagem_marting = (' |CICLO DE GALE N'+ str(ciclo_marting)) if martingale_ativo else ''
         # print('ciclo_marting: ' + str(ciclo_marting)) 
         # print('martingale_ativo: ' + str(martingale_ativo))  
         # print('mensagem_marting: ' +str(mensagem_marting))
